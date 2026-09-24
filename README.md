@@ -17,7 +17,7 @@ Tampermonkey checks this repo for updates automatically.
 
 - When you click ⋮ on a video card in the subscriptions feed, the script looks up that video's channel ID (this works the same way for Shorts).
 - It adds a row to YouTube's own popup by cloning the existing **Hide** row, so it matches the theme (light or dark) and the font.
-- Clicking the row asks you to confirm. It then calls the same internal API that YouTube's own Subscribe button uses (`youtubei/v1/subscription/unsubscribe`), authenticated with your existing session cookie, and hides that channel's videos from the feed you're looking at.
+- Clicking the row (no confirmation dialog) calls the same internal API that YouTube's own Subscribe button uses (`youtubei/v1/subscription/unsubscribe`), authenticated with your existing session cookie, and hides that channel's videos from the feed you're looking at.
 
 Nothing is sent anywhere except `youtube.com`. The script has no dependencies and uses `@grant none`.
 

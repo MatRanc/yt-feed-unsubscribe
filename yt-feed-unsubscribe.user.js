@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube Feed Unsubscribe
 // @namespace    https://github.com/MatRanc/yt-feed-unsubscribe
-// @version      1.1.1
+// @version      1.2.0
 // @description  Adds an "Unsubscribe" item to the ⋮ menu on videos in your YouTube subscriptions feed.
 // @author       MatRanc
 // @match        https://www.youtube.com/*
@@ -60,14 +60,16 @@
   const visibleMenu = () =>
     [...document.querySelectorAll('ytd-popup-container yt-list-view-model')].find(m => m.getClientRects().length);
 
-  function addItem(menu, card, channel) {
+  function addItem(menu, target) {
     menu.querySelector('[data-feed-unsub]')?.remove();
     const template = menu.querySelector('yt-list-item-view-model:last-of-type');
     if (!template) return;
+    const { card, channel } = target;
 
     // Clone a native row so it inherits YouTube's styling; cloneNode drops their listeners.
     const item = template.cloneNode(true);
     item.dataset.feedUnsub = '';
+    item.feedUnsubFor = target;
     const title = item.querySelector('.ytListItemViewModelTitle');
     title.textContent = 'Unsubscribe';
     channel.name.then(name => (title.textContent = `Unsubscribe from ${name}`), () => {});
@@ -86,8 +88,6 @@
       e.stopPropagation();
       menu.closest('tp-yt-iron-dropdown')?.close?.();
       try {
-        const name = await channel.name;
-        if (!confirm(`Unsubscribe from ${name}?`)) return;
         await api('subscription/unsubscribe', { channelIds: [await channel.id()] });
         // Hide this card, plus the channel's other videos in the feed.
         (card.closest('ytd-rich-item-renderer') || card).style.display = 'none';
@@ -98,23 +98,29 @@
       } catch (err) {
         alert(`Unsubscribe failed: ${err.message}`);
       }
-    }, true);
+    }, { capture: true, once: true });
 
     menu.append(item);
+    // The popup sizes itself when it opens; without a refit the new row is clipped (and clicks fall through).
+    menu.closest('tp-yt-iron-dropdown')?.refit?.();
+  }
+
+  let pending = null; // { card, channel } for the ⋮ button clicked last
+
+  function inject() {
+    const menu = pending && visibleMenu();
+    if (menu && menu.querySelector('[data-feed-unsub]')?.feedUnsubFor !== pending) addItem(menu, pending);
   }
 
   document.addEventListener('click', e => {
-    if (!location.pathname.startsWith('/feed/subscriptions')) return;
-    const card = e.target.closest('button')?.closest(CARD);
+    if (e.target.closest('ytd-popup-container')) return; // clicks inside the menu itself
+    const card = location.pathname.startsWith('/feed/subscriptions') && e.target.closest('button')?.closest(CARD);
     const channel = card && channelOf(card);
-    if (!channel) return;
-
-    // The popup renders async; poll briefly for it.
-    let tries = 0;
-    const timer = setInterval(() => {
-      const menu = visibleMenu();
-      if (menu || ++tries > 20) clearInterval(timer);
-      if (menu) addItem(menu, card, channel);
-    }, 50);
+    pending = channel ? { card, channel } : null;
   }, true);
+
+  // The popup is created lazily and re-rendered per open, so add the item whenever it shows up.
+  new MutationObserver(inject).observe(document.body, {
+    childList: true, subtree: true, attributes: true, attributeFilter: ['style'],
+  });
 })();
