@@ -2,7 +2,7 @@
 
 A tiny userscript that adds **Unsubscribe from ‹channel›** to the ⋮ menu on videos in your [YouTube subscriptions feed](https://www.youtube.com/feed/subscriptions). You can prune your subscriptions while you scroll, without opening each channel page.
 
-<p align="center"><img src="docs/demo.png" width="520" alt="The ⋮ menu on a subscriptions-feed video, with an added 'Unsubscribe from Worldwide P.' item under Hide"></p>
+<p align="center"><img src="docs/demo.png" width="520" alt="The ⋮ menu on a subscriptions-feed video, with an added 'Unsubscribe from NOAA Ocean Exploration' item under Hide"></p>
 
 ## Install
 
@@ -15,7 +15,7 @@ Tampermonkey checks this repo for updates automatically.
 
 ## How it works
 
-- When you click ⋮ on a video card in the subscriptions feed, the script reads the channel link (`/@handle`) from that card.
+- When you click ⋮ on a video card in the subscriptions feed, the script reads the channel link (`/@handle`) from that card. Shorts cards don't have a channel link, so for those it looks up the channel from the video ID.
 - It adds a row to YouTube's own popup by cloning the existing **Hide** row, so it matches the theme (light or dark) and the font.
 - Clicking the row asks you to confirm. It then calls the same internal API that YouTube's own Subscribe button uses (`youtubei/v1/subscription/unsubscribe`), authenticated with your existing session cookie, and hides that channel's videos from the feed you're looking at.
 
@@ -23,7 +23,7 @@ Nothing is sent anywhere except `youtube.com`. The script has no dependencies an
 
 ## Limitations
 
-- It only runs on `/feed/subscriptions`. Shorts cards don't include a channel link, so they don't get the menu item.
+- It only runs on the subscriptions feed (`/feed/subscriptions`), for both regular videos and Shorts.
 - YouTube changes its markup often. If the item stops appearing, [open an issue](https://github.com/MatRanc/yt-feed-unsubscribe/issues).
 
 ## License
