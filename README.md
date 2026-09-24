@@ -15,7 +15,7 @@ Tampermonkey checks this repo for updates automatically.
 
 ## How it works
 
-- When you click ⋮ on a video card in the subscriptions feed, the script reads the channel link (`/@handle`) from that card. Shorts cards don't have a channel link, so for those it looks up the channel from the video ID.
+- When you click ⋮ on a video card in the subscriptions feed, the script looks up that video's channel ID (this works the same way for Shorts).
 - It adds a row to YouTube's own popup by cloning the existing **Hide** row, so it matches the theme (light or dark) and the font.
 - Clicking the row asks you to confirm. It then calls the same internal API that YouTube's own Subscribe button uses (`youtubei/v1/subscription/unsubscribe`), authenticated with your existing session cookie, and hides that channel's videos from the feed you're looking at.
 

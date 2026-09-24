@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube Feed Unsubscribe
 // @namespace    https://github.com/MatRanc/yt-feed-unsubscribe
-// @version      1.1.0
+// @version      1.1.1
 // @description  Adds an "Unsubscribe" item to the ⋮ menu on videos in your YouTube subscriptions feed.
 // @author       MatRanc
 // @match        https://www.youtube.com/*
@@ -40,26 +40,21 @@
     return res.json();
   }
 
-  async function channelId(href) {
-    const direct = href.match(/^\/channel\/(UC[\w-]{22})/)?.[1];
-    if (direct) return direct;
-    const res = await api('navigation/resolve_url', { url: location.origin + href });
-    const id = res.endpoint?.browseEndpoint?.browseId;
-    if (!id) throw new Error(`Couldn't resolve ${href}`);
-    return id;
-  }
-
-  // Regular cards link to the channel; Shorts cards only have the video ID, so ask the player API.
+  // Every card links to its video, and the player API returns that video's channel ID.
+  // (Resolving /@handles is unreliable: some, like @Level1Techs, redirect instead of returning an ID.)
   function channelOf(card) {
-    const link = card.querySelector(CHANNEL_LINK);
-    if (link) {
-      const href = link.getAttribute('href');
-      return { href, name: Promise.resolve(link.textContent.trim() || href.slice(1)), id: () => channelId(href) };
-    }
-    const videoId = card.querySelector('a[href^="/shorts/"]')?.getAttribute('href').split('/')[2];
+    const videoId = card.querySelector('a[href*="/watch?v="], a[href^="/shorts/"]')
+      ?.getAttribute('href').match(/(?:v=|shorts\/)([\w-]{11})/)?.[1];
     if (!videoId) return null;
-    const details = api('player', { videoId }).then(r => r.videoDetails);
-    return { name: details.then(d => d.author), id: () => details.then(d => d.channelId) };
+    const details = api('player', { videoId }).then(r => {
+      if (!r.videoDetails?.channelId) throw new Error(`No channel found for video ${videoId}`);
+      return r.videoDetails;
+    });
+    details.catch(() => {}); // surfaced on click
+    const link = card.querySelector(CHANNEL_LINK); // Shorts cards don't have one
+    const href = link?.getAttribute('href');
+    const name = link?.textContent.trim() ? Promise.resolve(link.textContent.trim()) : details.then(d => d.author);
+    return { href, name, id: () => details.then(d => d.channelId) };
   }
 
   const visibleMenu = () =>
