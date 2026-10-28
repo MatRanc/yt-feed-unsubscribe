@@ -28,4 +28,4 @@ Nothing is sent anywhere except `youtube.com`. The script has no dependencies an
 
 ## License
 
-MIT
+[GNU Affero General Public License v3.0](LICENSE)
